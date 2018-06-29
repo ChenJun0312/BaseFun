@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<title>搜索</title>
+		<link href="../css/Fui.css" rel="stylesheet" />
+	</head>
+	<body>
+		<div class="WBox WBOX-H Nav-Header">
+			<div class="Left" data-opt='{"Ct":"tap","CFun":"ClosePage"}'>
+				<span class="iconfont icon-fanhui Font-15-3"></span>
+			</div><!--这个是为了解决换行引起的盒子间距问题
+		 --><div class="WItem-1 Center">
+				<div class="Search-Group">
+					<div class="WBox WBOX-H InputBox">
+						<div class="Left">
+							<span class="iconfont icon-sousuo-sousuo Font-14-9"></span>
+						</div>
+						<div class="WItem-1 Center">
+							<form action="" data-opt='{"Ct":"submit","CFun":"ToSearch"}' >
+								<input autofocus="autofocus" id="SearchInput" class="Search-input Font-14-0" type="text" placeholder="请输入你感兴趣的关键词" />
+							</form>
+						</div>
+						<div class="Right">
+							<span class="iconfont icon-xiaoxi Hidden"></span>
+						</div>
+					</div>
+				</div>
+			</div><!--
+		 --><div class="Right" data-opt='{"Ct":"tap","CFun":"ToSearch"}'>
+		 		<span class="Font-15-3">搜索</span>
+		 	</div>
+		</div>
+		<div class="Content Content-H BackColor1">
+			<div class="Scroll">
+				<div class="Card-Label">
+					<span class="Font-20-3b">历史搜索</span>
+				</div>
+				<div class="List-Group BackColor1" data-opt='{"Dn":"OSL","Mt":"GOSK"}'>
+					<div class="List-Item" data-opt='{"Ct":"tap","CFun":"ToSearch"}'>
+						<span class="Label Font-16-0" >{{SKey}}</span>
+					</div>
+				</div>
+				<div class="Card-Label">
+					<span class="Font-20-3b">热门搜索</span>
+				</div>
+				<div class="List-Group BackColor1" data-opt='{"Dn":"HSL","Mt":"GHSK"}'>
+					<div class="List-Item" data-opt='{"Ct":"tap","CFun":"ToSearch"}'>
+						<span class="Label Font-16-0" >{{SKey}}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			function ToSearch(Dom){
+				var Value = document.getElementById("SearchInput").value;				
+				if(Dom.classList.contains("List-Item")){//获取输入的关键词
+					Value = Dom.firstElementChild.innerHTML;//点了历史搜索或者热搜
+				}
+				//ClosePageByUrl("Model/SearchData");
+				OpenPage("Model/SearchData",{"SearchKey":Value});
+				Dom.ParentPage.Hide();//是否需要关闭当前页
+			}
+		</script>
+	</body>
+</html>

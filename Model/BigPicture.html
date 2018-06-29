@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+	    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	    <title>大图浏览</title>
+	    <link href="../css/Fui.css" rel="stylesheet" />
+	</head>
+	<body>
+		<div class="Content" style="background-color: #373a41;height: 100vh;">
+			<div class="Diag-Box SliderBox">
+				<div class="Slider" data-opt='{"Dn":"BPLView","Dss":"Parameter","Dvt":"S"}'></div>
+			</div>
+		</div>
+		<div class="BigPicture-Icon BigPicture-Icon-Back" data-opt='{"Ct":"tap","CFun":"ClosePage"}'>
+			<span class="iconfont icon-fanhui"></span>
+		</div>
+		<div class="BigPicture-Icon BigPicture-Icon-Chat" data-opt='{"Ct":"tap","CFun":"ToChat"}'>
+			<span class="iconfont icon-iconlianxi"></span>
+		</div>
+		<div class="BigPicture-Icon BigPicture-Icon-Collection" data-opt='{"Ct":"tap","CFun":"ToCollection"}'>
+			<span class="iconfont icon-shoucang" id="isCollection"></span>
+		</div>
+		<div class="BigPicture-Icon BigPicture-Icon-PPath" data-opt='{"Ct":"tap","CFun":"DownLoadPic"}'>
+			<span class="iconfont icon-xiazai" id="DownLoadDom"></span>
+		</div>		
+		<script>
+			function ModelBigPictureInit(Dom){
+				if(Os.Wechat && Os.Mobile){//微信移动端不支持直接下载图片
+					document.getElementById("DownLoadDom").className = "iconfont icon-zuodayuantu";
+				}
+				ShowCollection();
+			}
+			function DownLoadPic(Dom){//下载原图
+				var SliderGroup = DataDomes["BPLView"].firstElementChild;
+				var CurrentImg = SliderGroup.ImgData[SliderGroup.children[1].ImgIndex];
+				var CurrentImgUrl = "https://kk.xiaoxiongmama.com/picture/" + CurrentImg.PPath;
+				if(Os.Mobile && Os.Wechat){
+					wx.previewImage({
+						current: CurrentImgUrl, // 当前显示图片的http链接
+						urls: [CurrentImgUrl]// 需要预览的图片http链接列表
+					});
+				}else{
+					PcDownLoadImg(CurrentImg.PPath);
+				}
+			}
+			function ToCollection(Dom){//收藏与取消收藏
+				var SliderGroup = DataDomes["BPLView"].firstElementChild;
+				var CurrentImg = SliderGroup.ImgData[SliderGroup.children[1].ImgIndex];
+				if(CurrentImg.isCollection == "0"){//未收藏
+					SendData({"Mt":"UCP","PID":CurrentImg.PID});//收藏
+				}else{
+					SendData({"Mt":"DUC","PID":CurrentImg.PID});//删除收藏
+				}
+			}
+			function UCP(Data){
+				if(Data.Code == 1){
+					var SliderGroup = DataDomes["BPLView"].firstElementChild;
+					var CurrentImg = SliderGroup.ImgData[SliderGroup.children[1].ImgIndex];
+					CurrentImg.isCollection = 1;
+					document.getElementById("isCollection").style.color = "#FF5959";
+				}
+			}
+			function DUC(Data){
+				if(Data.Code == 1){
+					var SliderGroup = DataDomes["BPLView"].firstElementChild;
+					var CurrentImg = SliderGroup.ImgData[SliderGroup.children[1].ImgIndex];
+					CurrentImg.isCollection = 0;
+					document.getElementById("isCollection").style.color = "#FFFFFF";
+				}
+			}
+			function ShowCollection(){
+				var isCollection = document.getElementById("isCollection");
+				if(!isCollection) return;
+				var SliderGroup = DataDomes["BPLView"].firstElementChild;
+				if(SliderGroup.ImgData[SliderGroup.children[1].ImgIndex].hasOwnProperty("isCollection") && SliderGroup.ImgData[SliderGroup.children[1].ImgIndex].isCollection == "0"){
+					isCollection.style.color = "#FFFFFF";
+				}else{
+					isCollection.style.color = "#FF5959";
+				}
+			}
+			function ToChat(Dom){//聊天
+				var SliderGroup = DataDomes["BPLView"].firstElementChild;
+				var CurrentImg = SliderGroup.ImgData[SliderGroup.children[1].ImgIndex];
+				if(CurrentImg.hasOwnProperty("UID")){
+					if(CurrentImg.UID == UserInfo.UID){
+						Alert("这是您自己上传的图片……");
+					}else{
+						OpenPage("Chat/Chat",JSON.stringify({"RUID":CurrentImg.UID}));
+					}
+				}				
+			}
+		</script>
+	</body>
+</html>

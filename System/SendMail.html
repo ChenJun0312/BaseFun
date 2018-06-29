@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<title>发送邮件</title>
+		<!--<link href="../css/Fui.css" rel="stylesheet" />-->
+	</head>
+	<body style="height: 100vh;">
+		<div class="BackDrop" data-opt='{"Ct":"tap","CFun":"ClosePage"}'></div>
+		<div class="Diag-Box Diag-Confirm">
+			<div class="Confirm-Title">设置邮箱</div>
+			<div class="Content Confirm-Content" style="padding-top: 0;">
+				<div class="Scroll Confirm-Scroll">
+					<input id="SILInput" type="text" autofocus="autofocus" placeholder="请输入邮箱地址" value="" style="margin-bottom: 11px;" />
+				</div>
+			</div>
+			<div class="WBox Confirm-Buttons">
+				<div class="WItem-1" data-opt='{"Ct":"tap","CFun":"ToSendMail"}'>确定</div>
+				<div class="WItem-1" data-opt='{"Ct":"tap","CFun":"ClosePage"}'>取消</div>
+			</div>
+		</div>
+		<script>
+			function SendMailInit(Dom){
+				SendData({"Mt":"GUML"});//从服务器获取曾经的邮箱地址
+				document.getElementById("SILInput").ParentPage = Dom;
+			}
+			function GUML(Data){
+				if(Data.RowCount > 0){
+					document.getElementById("SILInput").value = Data.ResultData[0].UMailAdd;
+				}
+			}
+			function ToSendMail(Dom){
+				var ToMail = document.getElementById("SILInput").value;
+				if(/^(\w-*\.*)+@(\w-?)+(\.\w{2,})+$/.test(ToMail)){
+					var Picker = document.getElementById("SILInput").ParentPage;
+					var Files = Picker.Parameter;
+					SendData({"Mt":"SPTM","ToMail":ToMail,"Files":Files});
+					Picker.Hide();
+					LoadPage.Show();
+				}else{
+					Alert("输入的邮箱错误（" + ToMail + "）");
+				}
+			}
+			function SPTM(Data){
+				LoadPage.Hide();
+				if(Data.Code == 1){					
+					Alert("邮件已发送,请查收");
+				}else{
+					Alert("邮件发送失败");
+				}
+			}
+		</script>
+	</body>
+</html>

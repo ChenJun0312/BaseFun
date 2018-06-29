@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>消息框</title>
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<link href="../css/Fui.css" rel="stylesheet" />
+	</head>
+	<body style="height: 100vh;">
+		<div class="BackDrop" data-opt='{"Ct":"tap","CFun":"ClosePage"}'></div>
+		<div class="Diag-Box Diag-Confirm"></div>
+	</body>
+	<script type="text/javascript">
+		function SystemConfirmInit(Dom){
+			var Data = Dom.Parameter;
+			var ConfirmBox = Dom.lastElementChild;
+			var NewData = {"Title":"","Content":"","Btns":[{label:'确定',index:1},{label:'取消',index:0}]};
+			if(typeof(Data) == "string" || typeof(Data) == "number") {			
+				NewData.Content = Data;
+			}else{
+				if(Data.hasOwnProperty("Title")) NewData.Title = Data.Title;//无内容主题不创建
+				if(Data.hasOwnProperty("Content")) NewData.Content = Data.Content;//无内容主题不创建
+				if(Data.hasOwnProperty("Btns")) NewData.Btns = Data.Btns;//无内容主题不创建
+				if(NewData.Content == "" && !Data.hasOwnProperty("InputType")) NewData.Content = "没有内容";//无内容主题不创建
+			}
+			if(NewData.Title) CreateDom("div","Confirm-Title",ConfirmBox,NewData.Title);//如果存在标题则创建标题			
+			var Content = CreateDom("div","Content Confirm-Content",ConfirmBox);//创建内容区
+			var Scroll = CreateDom("div","Scroll",Content);
+			var InputDom = null;
+			if(Data.hasOwnProperty("InputType")){//存在输入则创建输入框
+				InputDom = CreateDom(Data.InputType,"",Scroll);
+				InputDom.type = Data.InputDataType || "text";
+				InputDom.placeholder = Data.Placeholder || "请输入";
+				InputDom.value = Data.Value || "";
+				InputDom.autofocus = "autofocus";
+				if(Data.InputType == "textarea") InputDom.rows = 3;
+			}else{
+				Scroll.innerHTML = NewData.Content;
+			}
+			//创建按钮区
+			var Buttons = CreateDom("div","WBox Confirm-Buttons",ConfirmBox);
+			for(var i = 0;i < NewData.Btns.length;i++){//循环创建按钮
+				if(NewData.Btns[i].label == "") continue;//如果文字为空则不显示按钮
+				var TempBtn = CreateDom("div","WItem-1",Buttons,NewData.Btns[i].label);
+				TempBtn.dataset.index = NewData.Btns[i].index;
+				TempBtn.AddEvent("Tap",function(Ele){
+					if(InputDom) Ele.dataset.inputvalue = InputDom.value.Trim();
+					ExecCallBack(Data.CallBack,Ele);
+					ClosePage(ConfirmBox);
+				})
+			}
+			if(InputDom) InputDom.focus();
+		}
+	</script>
+
+</html>

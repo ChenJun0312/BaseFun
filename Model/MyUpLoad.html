@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+	    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	    <title>我的上传</title>
+	    <link href="../css/Fui.css" rel="stylesheet" />		
+	</head>
+	<body>
+		<div class="Card-Box" data-opt='{"Dn":"MyInfo","Dss":"UserInfo","Ct":"tap","CFun":"Login"}'>
+			<div class="WBox WBOX-H MyHeadPortrait">
+				<img src="{{HeadPortrait}}" />
+				<div class="WItem-1 Ellipsis">{{NickName}}</div>				
+			</div>
+		</div>
+		<div class="Diag-Box NoBoxShadow" style="top:85px;">
+			<span>被浏览999张</span>
+			<span>被收藏999张</span>
+		</div>
+		<div class="Content" style="height: calc(100vh - 139px);">
+			<div class="Scroll" data-opt='{"Dn":"MUPWaterFallBox","Mt":"GMUPL","Dss":"SK","Dvt":"W","Del":"Y"}' data-SK='{"SearchKey":""}'></div>
+		</div>
+		<div class="Nav-Footer WBox WBOX-H Center">
+			<div class="WItem-1 " data-opt='{"Ct":"tap","CFun":"ClosePage"}'>
+				<span class="iconfont icon-fanhui"></span>
+				<p class="Footer-Item">返回</p>
+			</div>
+			<div class="WItem-1 " data-opt='{"Ct":"tap","PageUrl":"Model/MyCollection"}'>
+				<span class="iconfont icon-wodeshoucang"></span>
+				<p class="Footer-Item">我的收藏</p>
+			</div>
+			<div class="WItem-1 " data-opt='{"Ct":"tap","CFun":"SetSendMailFU"}'>
+				<span class="iconfont icon-youjian"></span>
+				<p class="Footer-Item">发送邮件</p>
+			</div>
+			<div class="WItem-1 " data-opt='{"Ct":"tap","CFun":"DelUpLoad"}'>
+				<span class="iconfont icon-shanchu"></span>
+				<p class="Footer-Item">取消上传</p>
+			</div>
+			<div class="WItem-1 " data-opt='{"Ct":"tap","CFun":"FullChooseFU"}'>
+				<span class="iconfont icon-xuanze2"></span>
+				<p class="Footer-Item">全选</p>
+			</div>
+		</div>
+		<script>
+			function ModelMyUpLoadInit(Dom){
+				if(!UserInfo.hasOwnProperty("IsLogin") || UserInfo.IsLogin == "0"){
+					Confirm({Content:"要登录吗?登录后您的上传将在手机与PC中同步"},function(Dom){
+						if(Dom.dataset.index == 1) Login();
+					})
+				}				
+			}
+			function SetSendMailFU(){
+				var Files = DataDomes["MUPWaterFallBox"].ChooseFiles;
+				if(Files.length > 0){
+					OpenPage("System/SendMail",Files.join(","));
+				}else{
+					Alert("您没有选择任何图片");
+				}
+			}
+			function FullChooseFU(Dom){
+				var allDom = DataDomes["MUPWaterFallBox"].getElementsByTagName("span");
+				if(DataDomes["MUPWaterFallBox"].ChooseFiles.length == DataDomes["MUPWaterFallBox"].WaterFallData.length){
+					DataDomes["MUPWaterFallBox"].ChooseFiles = [];					
+					for(var i = 0;i < allDom.length;i++){
+						if(allDom[i].classList.contains("icon-xuanze2")) {
+							allDom[i].classList.remove("icon-xuanze2");
+							allDom[i].classList.add("icon-choose");
+						};
+					}
+				}else{
+					for(var i = 0;i < allDom.length;i++){
+						if(allDom[i].classList.contains("icon-choose")) {
+							allDom[i].classList.remove("icon-choose");
+							allDom[i].classList.add("icon-xuanze2");
+							DataDomes["MUPWaterFallBox"].ChooseFiles.push(allDom[i].Pid);
+						};
+					}
+				}
+			}
+			function DelUpLoad(Dom){
+				var Files = DataDomes["MUPWaterFallBox"].ChooseFiles;
+				if(Files.length > 0){
+					Confirm({Content:"真的要删除这些图片吗?"},function(Dom){
+						if(Dom.dataset.index == 1){
+							SendData({"Mt":"DMUES","Files":Files.join(",")});
+						};
+					})
+				}else{
+					Alert("您没有选择任何图片");
+				}
+			}
+			function DMUES(Data){
+				if(Data.Code == 1){
+					OpenPage("Model/MyUpLoad");
+				}
+			}
+		</script>
+	</body>
+</html>

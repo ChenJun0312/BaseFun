@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<link href="../css/Fui.css" rel="stylesheet" />
+	</head>
+	<body style="height: 100vh;">
+		<div class="BackDrop" data-opt='{"Ct":"tap","CFun":"ClosePage"}'></div>
+		<div class="SheetBox">
+			<div class="Scroll" style="margin-bottom: 5px;">
+				
+			</div>
+			<div class="List-Row CancelBtn" data-opt='{"Ct":"tap","CFun":"ClosePage"}' style="border-radius: 8px;">取消</div>
+		</div>
+	</body>
+	<script type="text/javascript">
+		function SheetInit(Dom){
+			var Data = Dom.Parameter.SheetData;
+			var TheSheetScroll = Dom.lastElementChild.firstElementChild;
+			for(var i = 0;i < Data.length;i++){
+				var SheetItem = CreateDom("div","List-Row",TheSheetScroll,Data[i].label);
+				SheetItem.dataset.id = Data[i].id;
+				SheetItem.AddEvent("Tap",function(Ele){
+					Dom.Parameter.innerHTML = Ele.innerHTML;
+					Dom.Parameter.dataset.id = Ele.getAttribute("data-id");
+					SetSubmitData(Dom.Parameter,Dom.Parameter.Opt.Key,Ele.getAttribute("data-id"));
+					ExecCallBack(Dom.Parameter.CallBack,Ele.getAttribute("data-id"));
+					ClosePage(Dom);
+				})
+			}
+		}
+	</script>
+
+</html>

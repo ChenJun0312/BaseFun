@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>消息列表</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<!--<link href="../css/Fui.css" rel="stylesheet" />-->
+	</head>
+	<body>
+		<div class="Content">
+			<div class="Scroll" data-opt='{"Dn":"MsgList","Mt":"GSMM"}'>
+				<div class="Card-Box WBox WBOX-H" data-opt='{"Ct":"tap","PageUrl":"Chat/Chat"}' data-Parameter='{"RUID":{{Lxr}}}'>
+					<div class="Left">
+						<img src="{{HeadPortrait}}" class="Portrait"/>
+						<span class="Badge UnReadCount UnReadCount-MsgList Hidden{{URCount}}">{{URCount}}</span>
+					</div>
+					<div class="WItem-1 Left Ellipsis">
+						<span class="Font-15-33 LineHeight3">{{NickName}}</span>
+						<span class="Font-13-8 LineHeight1">{{MsgContent}}</span>
+					</div>
+					<div class="Right">
+						<span class="Font-12-8 ">{{SendTime}}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="BigPicture-Icon BigPicture-Icon-Back" data-opt='{"Ct":"tap","CFun":"ClosePage"}'>
+			<span class="iconfont icon-fanhui"></span>
+		</div>
+		<!--首页处理逻辑-->
+		<script type="text/javascript">
+			///*这个函数是放在消息列表页面中的*/
+			function NewMessage(Data){
+				if(DataDomes["MsgList"]){
+					DataDomes["MsgList"].innerHTML = "";
+					SendData({"Mt":"GSMM","Dn":"MsgList"});
+				}
+			}
+		</script>
+	</body>
+
+</html>

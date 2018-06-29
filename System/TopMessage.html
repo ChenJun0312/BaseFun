@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>消息框</title>
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<link href="../css/Fui.css" rel="stylesheet" />
+	</head>
+	<body style="height: 100vh;">
+		<div class="BackDrop" data-opt='{"Ct":"tap","CFun":"ClosePage"}' style="background-color: transparent;"></div>
+		<div class="WBox WBOX-H TopMessageBox" data-opt='{"Dn":"TopMessageInfo","Dss":"Parameter","Ct":"tap","CFun":"ToMsgLink"}'>
+			<div class="Left Hidden{{Img}}" data-Link='{{Link}}' data-Parameter='{"RUID":"{{senduser}}"}'>
+				<img src="{{Img}}" />
+			</div>
+			<div class="WItem-1 Center" style="padding: 0 7px;">
+				<span class="Font-15-33 Ellipsis">{{Title}}</span>
+				<span class="Font-13-6 Ellipsis">{{Content}}</span>
+			</div>
+			<div class="Right">
+				<span class="Font-13-9">{{SendTime}}</span>
+			</div>
+		</div>
+	</body>
+	<script type="text/javascript">
+		function SystemTopMessageInit(Dom){
+			Dom.lastElementChild.style.top = "4px";
+			window.setTimeout(function(){Dom.Hide();},4000);//自动停留4秒
+		}
+		function ToMsgLink(Dom){
+			var Link = Dom.firstElementChild.getAttribute("data-Link");
+			if(Link && Link.trim() != ""){//如果是打开聊天对话则
+				OpenPage(Link,Dom.firstElementChild.getAttribute("data-Parameter"));
+				ClosePage(Dom);
+			}
+		}
+	</script>
+
+</html>

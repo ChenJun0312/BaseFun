@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<title>上传图片</title>
+		<link href="../css/Fui.css" rel="stylesheet" />
+	</head>
+	<body style="height: 100vh;">
+		<div class="Content Content-F">
+			<div class="WaterFallBox">
+				<div class="List-Title">设置图片描述(限30字)</div>
+				<textarea id="SILInput" rows="3" maxlength="30" autofocus="autofocus" placeholder="请输入图片标题，这是搜索的关键匹配因素" style="border-radius: 5px;"></textarea>
+				<div class="List-Title">最近热搜关键词</div>
+				<div data-opt='{"Dn":"THSL","Mt":"GHSK"}'>
+					<div class="List-Item" data-opt='{"Ct":"tap","CFun":"ChooseLabel"}'>
+						<span class=" Label Font-16-0">{{SKey}}</span>
+					</div>
+				</div>
+				<div class="List-Title WBox WBOX-H" data-opt='{"Ct":"Tap","CFun":"ToAddImg"}'>
+					<div class="Left">添加图片(PC端可一次选多张)</div>
+					<div class="WItem-1 Right"><span class="iconfont icon-icon-xinzeng"></span></div>
+				</div>
+				<div class="Scroll" id="ChooseFileFU">
+				
+				</div>
+			</div>			
+		</div>
+		<div class="Nav-Footer WBox WBOX-H">
+			<div class="WItem-1 Center" data-opt='{"Ct":"tap","CFun":"UpLoadImg"}'>上传</div>
+			<div class="WItem-1 Center" data-opt='{"Ct":"tap","CFun":"ClosePage"}'>取消</div>
+		</div>
+		<script>
+			function ModelUpLoadImgInit(Dom){
+				if(!UserInfo.hasOwnProperty("IsLogin") || UserInfo.IsLogin == "0"){
+					Confirm({Content:"要登录吗?登录后您的上传（收藏）将在手机与PC中同步"},function(Dom){
+						if(Dom.dataset.index == 1) Login();
+					})
+				}
+				window.TheUPFiles = [];
+				window.FileTotalSize = 0;
+				window.FileUPSize = 0;
+				window.TheFileLabel = null;
+				window.UPFileIndex = 0;
+			}
+			function ModelSetImgLabelClose(Dom){//清除本页使用的全局变量
+				delete TheUPFiles;
+				delete FileTotalSize;
+				delete FileUPSize;
+				delete TheFileLabel;
+				delete UPFileIndex;
+			}
+			function ChooseLabel(Dom){
+				document.getElementById("SILInput").value += Dom.firstElementChild.innerHTML;
+			}
+			function ToAddImg(Dom){
+				var ChooseImgDom = document.getElementById("ChooseImgDom");//创建图片选择按钮
+				if(ChooseImgDom) ChooseImgDom.Close();
+				ChooseImgDom = CreateDom("input","Hidden",DataDomes["THSL"].ParentPage);//创建图片选择按钮
+				ChooseImgDom.id = "ChooseImgDom";
+				ChooseImgDom.type = "file";
+				ChooseImgDom.accept = "image/*";//限制只选择图片
+				if(!(Os.Android && Os.Wechat)) ChooseImgDom.multiple = "multiple";//多选
+				var MouseObj = document.createEvent("MouseEvents");//模拟点击事件
+				MouseObj.initEvent("click", true, true);		
+				ChooseImgDom.dispatchEvent(MouseObj);//模拟点击图片选择按钮
+				ChooseImgDom.addEventListener("change",function(){//图片选择后
+					for(var i = 0;i < this.files.length;i++){
+						TheUPFiles.push(this.files[i]);
+					}
+					WaterFallFU(document.getElementById("ChooseFileFU"),this.files);
+				})
+			}
+			function UpLoadImg(Dom){
+				TheFileLabel = document.getElementById("SILInput").value;
+				if(TheFileLabel == null || TheFileLabel.Trim() == ""){
+					Alert("必须设置图片描述，否则无法上传!");
+					return;
+				}
+				if(TheUPFiles.length == 0){
+					Alert("没有选择任何图片，无法上传");
+					return;
+				}
+				LoadPage.Show();
+				LoadPage.Process("开始");
+				UPFileIndex = 0;
+				FileTotalSize = 0;
+				FileUPSize = 0;
+				for(var i = 0;i < TheUPFiles.length;i++){
+					FileTotalSize = FileTotalSize + TheUPFiles[i].size;
+				}
+				LoadPage.Process("开始上传");
+				SendFiles();
+			}
+			function SendFiles(){
+				var File = TheUPFiles[UPFileIndex];
+			    var Reader = new FileReader();
+			    var Step = 1024 * 512;
+			    if(Os.Mobile) Step = 1024 * 256;
+			    var Total = File.size;
+			    var CuLoaded = 0;
+			    var Ext = File.name.split(".");
+			    Ext = Ext[Ext.length - 1];
+			    SendData({"Mt":"ULPFB","Total":Total,"Label":TheFileLabel,"Ext":Ext});
+			    Reader.onload = function (e) {//读取一段成功
+			    	var BlobData = e.target.result;
+			        CuLoaded += e.loaded;//已读取长度
+			        FileUPSize = FileUPSize + e.loaded;
+			        if(FileUPSize == FileTotalSize){
+			        	LoadPage.Process("数据校验");
+			        }else{
+			        	LoadPage.Process("上传" + Math.round(FileUPSize * 100 / FileTotalSize) + "%");
+			        }			        
+			        if (CuLoaded < Total) ReadBlob(CuLoaded);
+			        if(Wss.bufferedAmount > Step * 10){
+			            window.setTimeout(function(){Wss.send(BlobData);},3);
+			        }else{
+			            Wss.send(BlobData);
+			        }
+			    }
+			    ReadBlob(0);//开始读取
+			    function ReadBlob(Start){//指定开始位置，分块读取文件        
+			        var Blob = File.slice(Start, Start + Step);//指定开始位置和结束位置读取文件
+			        Reader.readAsArrayBuffer(Blob);
+			    }
+			}
+			function ULPF(Data){
+				if(Data.Code == 1){
+					UPFileIndex++;
+					if(UPFileIndex == TheUPFiles.length){
+						LoadPage.Hide();
+						DataDomes["THSL"].ParentPage.Hide();
+						Confirm({Content:"图片上传成功，是否需要刷新?"},function(Dom){
+							if(Dom.dataset.index == 1) OpenPage("Model/index");
+						})
+					}else{
+						SendFiles();
+					}
+				}
+			}
+			function WaterFallFU(Dom,Data){
+				if(Dom.children.length == 0){//判断当前是不是第一页
+					Dom.WaterFallBox = CreateDom("div","WaterFallBox",Dom);
+					Dom.ListNumber = 2;
+					if(Dom.offsetWidth > 900) Dom.ListNumber = 4;
+					Dom.List = [];
+					for(var i = 0;i < Dom.ListNumber;i++){//如果是则依据屏幕尺寸创建列
+						Dom.List[i] = CreateDom("div","HItem HItem-2",Dom.WaterFallBox);
+					}
+				}
+				CreateWaterFallItemFU(0,Dom);//开始循环载入图片
+				function CreateWaterFallItemFU(i,ParentDom){//生成图片
+					if(i >= Data.length) return;
+					var Reader = new FileReader();
+		       		Reader.onload = function (e) {
+						var ThumbnailDom = document.createElement("img");
+						ThumbnailDom.onload = function(e){
+							var TempDom = GetMinHeight(ParentDom);						
+							TempDom = CreateDom("div","",TempDom);
+							TempDom.File = Data[i];
+							TempDom.appendChild(this);
+							var TheDel = CreateDom("span","iconfont icon-shanchu",TempDom);
+							TheDel.AddEvent("Tap",function(Dom){
+								TheUPFiles.Remove(Dom.parentNode.File);
+								Dom.parentNode.parentNode.removeChild(Dom.parentNode);
+							})							
+							i++;
+							CreateWaterFallItemFU(i,ParentDom);
+						}
+						ThumbnailDom.src = e.target.result;
+					}
+		       		Reader.readAsDataURL(Data[i]);
+				}
+				function GetMinHeight(ParentDom){
+					var MinHeightDom = ParentDom.List[0];
+					for(var i = 1;i < ParentDom.List.length;i++){
+						if(ParentDom.List[i].scrollHeight < MinHeightDom.scrollHeight){
+							MinHeightDom = ParentDom.List[i];  // 最小值
+						}
+					}
+					return MinHeightDom;
+				}
+			}
+		</script>
+	</body>
+</html>

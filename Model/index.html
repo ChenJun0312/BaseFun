@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>首页</title>
+</head>
+<body>
+	<div class="Content Content-F" >
+		<div class="Scroll" data-opt='{"Dn":"HPWaterFallBox","Mt":"GTIL","Dss":"SK","Dvt":"W"}' data-SK='{"SearchKey":""}'></div>
+	</div>
+	<div class="Nav-Footer WBox WBOX-H Center">
+		<div class="WItem-1 " data-opt='{"Ct":"tap","PageUrl":"Model/Search"}'>
+			<span class="iconfont icon-sousuo-sousuo"></span>
+			<p class="Footer-Item">搜索</p>
+		</div>
+		<div class="WItem-1 " data-opt='{"Ct":"tap","PageUrl":"Model/index"}'>
+			<span class="iconfont icon-shuaxin"></span>
+			<p class="Footer-Item">刷新</p>
+		</div>
+		<div class="WItem-1 " data-opt='{"Ct":"tap","PageUrl":"Model/UpLoadImg"}'>
+			<span class="iconfont icon-icon-xinzeng"></span>
+			<p class="Footer-Item">添加</p>
+		</div>
+		<div class="WItem-1 " data-opt='{"Ct":"tap","PageUrl":"Chat/MessageList"}'>
+			<span class="iconfont icon-xiaoxi"></span>
+			<span class="Badge Hidden" id="UnReadCount"></span>
+			<p class="Footer-Item">消息</p>
+		</div>
+		<div class="WItem-1 " data-opt='{"Ct":"tap","PageUrl":"Model/MyCollection"}'>
+			<span class="iconfont icon-weibiaoti-"></span>
+			<p class="Footer-Item">我的</p>
+		</div>
+	</div>
+	<script>
+		function indexInit(Dom){
+			GURC({"UnReadCount":sessionStorage.getItem("UnReadCount")});
+		}
+	</script>
+</body>
+</html>

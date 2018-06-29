@@ -1,0 +1,871 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+	</head>
+	<body>
+		<div id="TheJs">
+			<!--//本框架中大量采用window.来定义全局变量，目的是为了方便清除变量
+			window.TempIFrame = document.body.getElementsByTagName("iframe");
+			for(var i = 0;i < TempIFrame.length;i++){//清除创建JS脚本所采用的内联框架
+				document.body.removeChild(TempIFrame[i]);
+			};
+			delete TempIFrame;//删除变量
+			window.TempScript = document.body.getElementsByTagName("script");
+			for(var i = 0;i < TempScript.length;i++){//清除创建所有JS脚本
+				document.body.removeChild(TempScript[i]);
+			};
+			delete TempScript;
+			LoadCSS("css/Fui.css");
+			window.SysTitle = document.title;
+			window.Os = {Mobile:/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+						Wechat:/MicroMessenger/i.test(navigator.appVersion),
+						Android:/Android/i.test(navigator.appVersion),
+						Iphone:/iPhone/i.test(navigator.appVersion),
+						Plus:/Html5Plus/i.test(navigator.userAgent)};
+			window.OffLineMsg = [];
+			window.WxReady = false;
+			window.PickerBox = [];
+			window.DataDomes = {};
+			window.PicturePath = "https://kk.xiaoxiongmama.com/picture/";
+			//苹果微信在底部会自动出现上一页下一页，是否与下面代码有关
+			window.addEventListener("load",function(){
+				window.FullBody = document.getElementById("FullBody");
+				if(!FullBody) FullBody = CreateDom("div","FullBody",document.body);
+				if(!(Os.Iphone && Os.Wechat)){
+					window.history.pushState(null,null, "");
+					window.addEventListener('popstate', function(event){
+						window.history.pushState(null,null, "");
+						if(PickerBox && PickerBox.length > 1){
+							var Picker = PickerBox[PickerBox.length - 1];
+							(Picker.Hide && typeof(Picker.Hide) === "function") && Picker.Hide();
+						}else{
+							Confirm({Content:"真的要退出吗?"},function(Dom){
+								if(Dom.dataset.index == 1) Quit();
+							})
+						}
+					});	
+				}				
+			})
+			/*定义全局变量*/
+			window.UserInfo = localStorage.getItem("UserInfo");//用户信息获取UserInfo（用户ID、用户昵称、用户头像、是否实名认证）
+			console.log(UserInfo);
+			//处理本地存储用户信息
+			if(!UserInfo || UserInfo == "undefined" || UserInfo.indexOf("UID") == -1) UserInfo = '{"UID":0,"HeadPortrait":"img/up.png","NickName":"未登陆","IsLogin":"0"}';
+			UserInfo = JSON.parse(UserInfo);
+			UserInfo.Curl = encodeURIComponent(location.href.split('#')[0]);//当前页面地址
+			UserInfo.code = "";//默认微信授权为空				
+			window.Temphref = location.href.split('?');//分解当前地址栏，方便截取地址栏传递信息
+			if(Temphref.length > 1){//处理地址栏参数，目前只处理微信授权码、分享用户ID
+				var QueryString = decodeURIComponent(Temphref[1]).split("&");
+				for(var i = 0;i < QueryString.length;i++){
+					var Tempdata = QueryString[i].split("=");
+					UserInfo[Tempdata[0]] = Tempdata[1];
+				}
+			}
+			delete Temphref;
+			window.PathName = location.pathname.substring(1);
+			window.WebName = PathName == '' ? '' : PathName.substring(0, PathName.indexOf('/'));
+			window.CurrentUrl = location.protocol + '//' + window.location.host + '/';
+			if(WebName != "") CurrentUrl += WebName + '/';
+			delete PathName;
+			delete WebName;
+			if(Os.Mobile){//如果是移动端则
+				if(Os.Wechat){//处理微信字体大小不受控制的问题
+					if (typeof WeixinJSBridge == "object" && typeof WeixinJSBridge.invoke == "function") {
+						HandleFontSize();
+					} else { 
+						if (document.addEventListener) {
+							document.addEventListener("WeixinJSBridgeReady", HandleFontSize, false);
+						} else if (document.attachEvent) {
+							document.attachEvent("WeixinJSBridgeReady", HandleFontSize);
+							document.attachEvent("onWeixinJSBridgeReady", HandleFontSize); 
+						}
+					}
+					function HandleFontSize(){//字体控制HandleFontSize
+						WeixinJSBridge.invoke('setFontSizeCallback', { 'fontSize' : 0 });  // 设置网页字体为默认大小 
+						WeixinJSBridge.on('menu:setfont', function() {// 重写设置网页字体大小的事件
+					        WeixinJSBridge.invoke('setFontSizeCallback', { 'fontSize' : 0 });
+					    });
+					}
+				};
+				AddNewStyle('.Scroll{padding-right: 2.15%;}');//处理滚动区域
+				if(Os.Iphone){//苹果系统滑动优化
+					AddNewStyle('.Scroll{-webkit-overflow-scrolling:touch;}');
+				}else{
+					AddNewStyle('.Scroll{overflow-y: auto;}');
+				}
+			}
+			window.LoadPage = {//加载页
+				BackDrop:CreateDom("div","BackDrop"),//创建背景
+				LoadDiag:CreateDom("div","Diag-Box Diag-Confirm Diag-Load"),
+				Show:function(){//加载页显示
+					if(this.BackDrop.parentNode == FullBody) return;
+					FullBody.appendChild(this.BackDrop);
+					this.LoadDiag.innerHTML = '<img src="' + CurrentUrl + 'img/load.svg" class="LoadImg" /><p>加载中</p>';
+					FullBody.appendChild(this.LoadDiag);
+				},
+				Hide:function(){//加载页关闭
+					this.BackDrop.Close();
+					this.LoadDiag.Close();
+				},
+				Process:function(ProcessText){//加载过程显示
+					this.LoadDiag.lastElementChild.innerHTML = ProcessText;
+				}
+			};
+			ConnectServer();
+			function LoadCSS(Url){
+			    var Link = document.createElement('link');
+			    Link.type='text/css';
+			    Link.rel = 'stylesheet';
+			    Link.href = Url + '?tcn=' + Math.floor(Math.random()*1000);
+			    document.getElementsByTagName('head')[0].appendChild(Link);
+			}
+			function CreateDom(DomType,ClassName,Parent,innerHTML){
+				if(!DomType) return;
+				if(typeof(ClassName) == "string"){
+					if(typeof(Parent) == "string"){
+						innerHTML = Parent;
+						Parent = null;
+					}
+				}else{
+					innerHTML = Parent;
+					Parent = ClassName;
+					ClassName = null;
+				}
+				var TempDom = document.createElement(DomType);
+				if(ClassName != null && ClassName.trim() != "") TempDom.className = ClassName;
+				if(innerHTML != null && innerHTML.trim() != "") TempDom.innerHTML = innerHTML || "";
+				if(Parent != null && IsDom(Parent)) Parent.appendChild(TempDom);
+				return TempDom;
+			}
+			function AddNewStyle(NewStyle){//动态更改Css
+				var StyleElement = document.getElementById('Styles_JS');
+				if (!StyleElement) {
+					StyleElement = document.createElement('style');
+					StyleElement.type = 'text/css';
+					StyleElement.id = 'Styles_JS';
+					document.getElementsByTagName('head')[0].appendChild(StyleElement);
+				}
+				StyleElement.appendChild(document.createTextNode(NewStyle));
+			}
+			function Quit(){//退出系统
+				if(Os.Plus){//运行于App
+					plus.runtime.quit();
+				}else{
+					if(Os.Wechat){//微信中
+						WeixinJSBridge.call('closeWindow');
+					}else{//其它
+						if (!!window.ActiveXObject || "ActiveXObject" in window){
+							window.opener = null;
+							window.open('','_self');
+						}else{
+							window.location.href="about:blank";  
+						}
+						window.close();
+					}
+				}	
+			}
+			
+			/*基本函数定义*/
+			Array.prototype.Remove = function (Data) {//对数组进行函数扩展，函数作用是删除数组中某个元素
+				for(var i = 0;i < this.length;i++){
+					if (this[i] == Data){
+						this.splice(i,1);
+						break;
+					};
+				}
+			}
+			Array.prototype.IndexOf = function (Data) {//对数组进行函数扩展，函数作用是检查数组是否包含某个元素
+				for(var i = 0;i < this.length;i++){
+					if (this[i] == Data) return i;
+				}
+				return -1;
+			}
+			Array.prototype.Contains = function (Data) {//对数组进行函数扩展，函数作用是检查数组是否包含某个元素
+				if(this.IndexOf(Data) == -1) return false;
+				return true;
+			}
+			Array.prototype.Previous = function(Index){//对数组进行函数扩展，函数作用是循环获取上一个元素
+				if(Index == 0) return (this.length - 1);
+				return (Index - 1);
+			}
+			Array.prototype.Next = function(Index){//对数组进行函数扩展，函数作用是循环获取下一个元素
+				if(Index == (this.length - 1)) return 0;
+				return (Index + 1);
+			}
+			String.prototype.ReplaceAll = function(OldStr,NewStr){//扩展字符串函数，全替换
+				return this.replace(new RegExp(OldStr,"gm"),NewStr);
+			}
+			String.prototype.Trim = function() {//扩展字符串函数，去空格
+				return this.replace(/(^[\s\n\t]+|[\s\n\t]+$)/g, "");
+			};
+			String.prototype.ContainCount = function(CheckStr){ //扩展字符串函数，包含多少个
+				return this.split(CheckStr).length - 1;
+			}
+			//打开页面，SPA核心函数
+			function OpenPage(Url,Parameter,AnimationType){
+				LoadPage.Show();//显示等待页
+				window.TempIframe = CreateDom("iframe","Hidden",document.body);//创建一个iframe
+				TempIframe.addEventListener("load",function(){//记载结束才能获取完整的模板结构
+					var PageTitle = this.contentDocument.title;
+					var PageHtml = this.contentDocument.body.innerHTML;
+					this.src = 'about:blank';//主动清空，减少内存占用
+					this.Close();//移除临时iframe
+					delete TempIframe;
+					if(PageHtml.indexOf("未找到文件") > -1){
+						console.log(PageHtml);
+						LoadPage.Hide();
+						return;
+					}
+					ClosePageByUrl(Url);
+					var NewPage = CreateDom("div","Page-Picker",PageHtml);//创建一个浮动空壳子（用来装载打开的页面内容） 
+					NewPage.Url = Url;
+					if(Parameter) NewPage.Parameter = Parameter;
+					NewPage.AnimationType = AnimationType || {"Open":"left","Close":"left"};//显示与关闭动画{Open:1,Close:1}
+					NewPage.style[NewPage.AnimationType.Open.toLowerCase()] = "-100%";//设置左边位置为-100%
+					FullBody.appendChild(NewPage);//添加到FullBody
+					NewPage.DataCount = 0;
+					if(PageTitle.Trim() != ""){
+						document.title = SysTitle + "(" + PageTitle + ")";
+						NewPage.PageTitle = PageTitle;
+					}
+					PickerBox.push(NewPage);//添加浮动空壳子到弹出窗口集合（方便返回键处理）					
+					NewPage.Init(NewPage);//初始化页面
+					NewPage.Show();
+				})
+				TempIframe.src = Url.replace(".html","") + ".html?type=" + Math.floor(Math.random()*1000);//指向模板页
+			}
+			function ClosePage(Dom){//依据Dom，关闭所在的弹出盒子
+				if(Dom.ParentPage) Dom.ParentPage.Hide();
+			}
+			function ClosePageByUrl(Url){
+				for(var i = 0;i < PickerBox.length;i++){
+					if(PickerBox[i] && PickerBox[i].hasOwnProperty("Url") && PickerBox[i].Url == Url) PickerBox[i].Hide();
+				}
+			}
+			function IsDom(Dom){
+				if(typeof(HTMLElement) === 'object' ) return Dom instanceof HTMLElement;
+                return Dom && typeof(Dom) === 'object' && Dom.nodeType === 1 && typeof(Dom.nodeName) === 'string';
+			};
+			HTMLElement.prototype.AddTransition = function(TheTime){//加过渡
+				TheTime = TheTime || "0.3s";
+				this.style.transition = "all " + TheTime;
+				this.style.webkitTransition = "all " + TheTime;/*做兼容*/
+			};
+			HTMLElement.prototype.RemoveTransition = function(){//清除过渡
+				this.style.transition = "none";
+				this.style.webkitTransition = "none";
+			}
+			HTMLElement.prototype.TransitionEnd = function(CallBack){//未处理重复绑定的问题
+				if(CallBack && typeof(CallBack) === "function"){
+					this.addEventListener('transitionEnd',CallBack);
+					this.addEventListener('webkitTransitionEnd',CallBack);
+				}					
+			}
+			HTMLElement.prototype.Show = function(){
+				if(!this.hasOwnProperty("DataCount")) this.DataCount = 1;
+				this.DataCount--;	
+				if(this.DataCount <= 0) {
+					(this.Url && window[this.Url.replace("/","") + "Init"] && typeof(window[this.Url.replace("/","") + "Init"]) === "function") && window[this.Url.replace("/","") + "Init"](this);
+					if(this.hasOwnProperty("AnimationType")){
+						this.AddTransition(this.AnimationType.OpenTime);//添加动画效果
+						this.style[this.AnimationType.Open] =  + "0";//设置左边位置为0
+					}
+					LoadPage.Hide();
+				}
+			}
+			HTMLElement.prototype.Hide = function(){
+				(this.Url && window[this.Url + "Close"] && typeof(window[this.Url + "Close"]) === "function") && window[this.Url + "Close"](this);
+				PickerBox.Remove(this);//从弹出窗口数组中移除,不在弹出窗口数组中不执行任何动作
+				for(var i = 0;i < PickerBox.length;i++){
+					if(PickerBox[i].hasOwnProperty("PageTitle")){
+						document.title = SysTitle + "(" + PickerBox[i].PageTitle + ")";
+						break;
+					}
+				}
+				for(var key in DataDomes){//清除当前浮动盒子对应的配置元素
+					if(DataDomes[key].hasOwnProperty("ParentPage") && DataDomes[key].ParentPage == this) delete DataDomes[key];
+				}
+				if(this.hasOwnProperty("AnimationType")){
+					this.CloseAnimation();
+				}else{
+					this.Close();//从Dom中移除
+				}
+			}
+			HTMLElement.prototype.Close = function(){
+				this.innerHTML = "";//此处可优化
+				if(this.parentNode) this.parentNode.removeChild(this);//从Dom中移除
+				//delete this;
+			}
+			HTMLElement.prototype.CloseAnimation = function(){
+				this.AddTransition(this.AnimationType.CloseTime);//添加动画效果
+				this.TransitionEnd(function(e){e.target.Close();});
+				if(this.AnimationType.Close.toLowerCase() == "bottom"){
+					this.style.top = "100%";//设置左边位置为-100%
+				}else{
+					if(this.AnimationType.Close.toLowerCase() == "right"){
+						this.style.left = "100%";//设置左边位置为-100%
+					}else{
+						this.style[this.AnimationType.Close.toLowerCase()] = "-100%";//设置左边位置为-100%
+					}
+				}
+			}
+			HTMLElement.prototype.Init = function(ThePage){
+				this.ParentPage = ThePage;
+				if(this == ThePage){
+					this.DataCount = this.innerHTML.ContainCount('"Dn":');//无论从本地还是从服务器获取数据的均计入渲染总数
+				}else{					
+					if(this.tagName.toLowerCase() == "script" && this.parentNode != document.body){//如果模板页本身自带JS脚本，则使用appendChild方式来让它生效
+						window.NewScript = CreateDom("script",document.body,this.innerHTML);
+						this.Close();//优先处理掉JS脚本
+						NewScript.Close();
+						delete NewScript;
+					}else{//不是脚本的都进入初始化			
+						if(this.GetAttribute("data-opt")){//存在配置才进行配置
+							if(this.Opt.hasOwnProperty("Ct")) this.SetUI();
+							if(this.Opt.hasOwnProperty("Dn")){//存在配置才进行配置
+								if(!DataDomes.hasOwnProperty(this.Opt.Dn)){//首次配置
+									this.Model = this.innerHTML;
+									this.innerHTML = "";
+									this.Page = 1;
+									if(this.classList.contains("Scroll")){										
+										this.addEventListener("scroll",function(e){//滚动底部时，加载下一页
+										    if ((this.scrollHeight - this.scrollTop) <= this.parentNode.scrollHeight){
+										    	SendData({"Mt":this.Opt.Mt,"Data":this.PostData,"Dn":this.Opt.Dn,"Page":this.Page});
+										    }
+										})
+									}
+								}
+								DataDomes[this.Opt.Dn] = this;//依据数据源名称获取对应的Dom，在已经记录的Dom集合中	
+								window.Dss = this.Opt.Dss || this.Opt.Mt;//默认数据源为Mt，自定义为Dss
+								if(Dss == "Parameter"){
+									this.PostData = ThePage.Parameter;//页面传参
+								}else{
+									this.PostData = sessionStorage.getItem(Dss) || localStorage.getItem(Dss) || this.getAttribute("data-" + Dss);
+								}
+								
+								delete Dss;
+								if(this.PostData == null || this.PostData == "" || this.PostData == "[]" || this.PostData == "{}") this.PostData = {};
+								if(typeof(this.PostData) == "string"){
+									try{//转换为JSON
+										this.PostData = JSON.parse(this.PostData);
+									}catch(ex){
+										console.log(ex.message + "\r\n" + this.PostData);
+									}
+								}
+								if(this.Opt.hasOwnProperty("Mt")){//发送数据请求（接口指令，数据参数，请求对象）
+									SendData({"Mt":this.Opt.Mt,"Data":this.PostData,"Dn":this.Opt.Dn,"Page":this.Page});
+								}else{
+									this.SetData(this.PostData);//加载数据（数据源名称，0）
+								}
+								return;//有数据配置的由SetData完成子元素配置，因为SetData后当前子元素可能会变化
+							}
+						}
+					}
+				}
+				this.InitChildren();
+			}
+			HTMLElement.prototype.InitChildren = function(){
+				for(var i = 0;i < this.children.length;i++){
+					this.children[i].Init(this.ParentPage);
+				}
+			}
+			HTMLElement.prototype.SetData = function(Data){
+				if(this.Opt.Dvt == "B"){//用于处理弹出表的数据
+					this.SheetData = Data;//支持弹出选择列表的数据源
+				}else{
+					if(this.Opt.Dvt == "S"){//用于轮播
+						this.Slider(Data);//轮播图处理函数已经扩展为支持字符串
+					}else{
+						if(this.Opt.Dvt == "W"){//用于瀑布流
+							this.WaterFall(Data);
+						}else{
+							if(Object.prototype.toString.call(Data) != '[object Array]') Data = [Data];
+							window.NewHtml = "";
+							for(var i = 0;i < Data.length;i++){//循环数据行
+								window.TempHtml = this.Model || "";//获取模板语法
+								for(var key in Data[i]){//循环数据列
+									TempHtml = TempHtml.ReplaceAll("{{" + key + "}}",Data[i][key]);//替换数据，应该使用replaceall代替
+								}
+								NewHtml = NewHtml + TempHtml;
+							}
+							delete TempHtml;
+							if(NewHtml != "") this.innerHTML = this.innerHTML + NewHtml;//更新当前元素实例
+							delete NewHtml;
+							this.InitChildren();
+						}
+					}
+				}
+			}
+			HTMLElement.prototype.SetUI = function(){
+				if(this.hasOwnProperty("Opt") && this.Opt.hasOwnProperty("Ct")){
+					if(this.Opt.hasOwnProperty("PageUrl")){
+						this.AddEvent("Tap",function(Dom){
+							OpenPage(Dom.Opt.PageUrl,Dom.getAttribute("data-Parameter"),Dom.getAttribute("data-AnimationType"));
+						});
+					}else{
+						if(this.GetAttribute("data-SheetData")){
+							if(this.Opt.hasOwnProperty("CFun")) this.CallBack = this.Opt.CFun;
+							this.AddEvent("Tap",function(Dom){OpenPage("System/Sheet",Dom);});							
+						}else{
+							if(this.Opt.hasOwnProperty("InputType")){
+								this.AddEvent(this.Opt.Ct,"ShowInput");
+							}else{
+								this.AddEvent(this.Opt.Ct,this.Opt.CFun);
+							}							
+						}
+					}
+				}
+			}
+			HTMLElement.prototype.GetAttribute = function(Attribute){
+				var TempData = this.getAttribute(Attribute);//据说效率要比dataset高
+				var NewAttribute = Attribute.replace("data-","");
+				if(NewAttribute == "opt") NewAttribute = "Opt";
+				if(!TempData || TempData == "") return false;
+				try{//转换为JSON
+					this[NewAttribute] = JSON.parse(TempData);
+					this.removeAttribute(Attribute);
+					return true;
+				}catch(ex){
+					console.log(ex.message + "\r\n" + TempData);
+					return false;
+				}
+			}			
+			HTMLElement.prototype.AddEvent = function(EventType,CallBack){//封装手势动作，兼容PC
+				EventType = EventType.toLowerCase();
+				if(!this.hasOwnProperty("EventList")) this.EventList = [];//避免重复绑定
+				if(this.EventList.Contains(EventType)) return;
+				this.EventList.push(EventType);
+				if(EventType == "input" && (this.tagName.toLowerCase() == "input" || this.tagName.toLowerCase() == "textarea")){
+					this.addEventListener("input", function(e) {
+						this.SetSubmitData(this.value);
+						ExecCallBack(CallBack,this,this.value);
+					});
+				}else{
+					if(EventType == "tap" || EventType == "swiper"){
+						if("ontouchstart" in window){//移动端则使用触摸来模拟点击
+							if((EventType == "tap" && !this.EventList.Contains("swiper")) || (EventType == "swiper" && !this.EventList.Contains("tap"))){
+								var TapTime = 300,TapScroll = 10,BeginTime = 0,EndTime = 0,BeginX,BeginY;
+								this.addEventListener("touchstart",function(e){
+									BeginTime = e.timeStamp;
+									BeginX = e.changedTouches[0].clientX;
+									BeginY = e.changedTouches[0].clientY;
+									if(this.EventList.Contains("swiper")) ExecCallBack(CallBack,this,"Start");
+								},false);
+								this.addEventListener("touchend",function(e){
+									e.stopPropagation();
+									e.preventDefault();
+									var MoveX = e.changedTouches[0].clientX - BeginX; //计算移动的距离
+									var MoveY = e.changedTouches[0].clientY - BeginY; //计算移动的距离
+									if(Math.abs(MoveX) < TapScroll && Math.abs(MoveY) < TapScroll && (BeginTime - e.timeStamp) < TapTime){
+										if(this.EventList.Contains("tap") && !this.disabled) ExecCallBack(CallBack,this);
+									}else{
+										if(this.EventList.Contains("swiper")) SwiperEvent(this,MoveX,MoveY,CallBack);	
+									}
+								},false);
+							}
+							if(EventType == "swiper"){
+								this.addEventListener('touchmove',function(e){
+									e.stopPropagation();
+									e.preventDefault();
+									ExecCallBack(CallBack,this,"Move",e.touches[0].clientX - BeginX,e.touches[0].clientY - BeginY);
+								});
+							}
+						}else{
+							if(EventType == "tap"){
+								this.addEventListener("click",function(){ExecCallBack(CallBack,this);},false);
+							}else{
+								var IsDown = false,BeginX,BeginY;
+								this.addEventListener("mousedown",function(e){
+									IsDown = true;
+									BeginX = e.clientX;
+									BeginY = e.clientY;
+									ExecCallBack(CallBack,this,"Start");
+								},false);
+								this.addEventListener('mousemove',function(e){
+									if(IsDown){
+										e.stopPropagation();
+										e.preventDefault();
+										ExecCallBack(CallBack,this,"Move",e.clientX - BeginX,e.clientY - BeginY);
+									}					
+								});
+								this.addEventListener("mouseup",function(e){
+									IsDown = false;
+									SwiperEvent(this.parentNode.offsetWidth,e.clientX - BeginX,e.clientY - BeginY,CallBack);
+								},false);
+							}
+						}
+					}else{
+						this.addEventListener(EventType, function(e) {
+							ExecCallBack(CallBack,this);
+							e.preventDefault();
+						},false);
+					}
+				}
+				function SwiperEvent(Dom,MoveX,MoveY,CallBack){
+					if(Math.abs(MoveX) > Math.abs(MoveY)){
+						if(Math.abs(MoveX) > Math.min(Dom.parentNode.offsetWidth/5,66)){
+							if(MoveX > 0){
+								ExecCallBack(CallBack,Dom,"Left",MoveX);
+							}else{
+								ExecCallBack(CallBack,Dom,"Right",MoveX);
+							}						 
+						}else{
+							ExecCallBack(CallBack,Dom,"HNo",MoveX);				
+						}
+					}else{
+						if(Math.abs(MoveY) > Math.min(Dom.parentNode.offsetWidth/5,66)){
+							if(MoveY > 0){
+								ExecCallBack(CallBack,Dom,"Top",MoveY);
+							}else{
+								ExecCallBack(CallBack,Dom,"Down",MoveY);
+							}
+						}else{
+							ExecCallBack(CallBack,Dom,"VNo",MoveY);
+						}
+					}
+				}
+			}
+			HTMLElement.prototype.WaterFall = function(Data){
+				if(this.children.length == 0){//判断当前是不是第一页
+					this.WaterFallBox = CreateDom("div","WaterFallBox",this);
+					this.ListNumber = 2;
+					if(this.offsetWidth > 900) this.ListNumber = 4;
+					this.List = [];
+					for(var i = 0;i < this.ListNumber;i++){//如果是则依据屏幕尺寸创建列
+						this.List[i] = CreateDom("div","HItem HItem-2",this.WaterFallBox);
+					}
+					this.WaterFallData = [];//
+					this.ChooseFiles = [];
+				}
+				CreateWaterFallItem(0,this);//开始循环载入图片
+				function CreateWaterFallItem(i,ParentDom){//生成图片
+					if(i >= Data.length) return;
+					var ThumbnailDom = document.createElement("img");			
+					ParentDom.WaterFallData.push(Data[i]);
+					ParentDom.ChooseFiles.push(Data[i].PID);
+					ThumbnailDom.ImgIndex = ParentDom.WaterFallData.length - 1;
+					ThumbnailDom.onload = function(e){
+						var TempDom = GetMinHeight(ParentDom);						
+						if(ParentDom.hasOwnProperty("Opt") && ParentDom.Opt.hasOwnProperty("Del")){//如果存在删除则添加删除图标
+							TempDom = CreateDom("div","",TempDom);
+							var TheChoose = CreateDom("span","iconfont icon-xuanze2",TempDom);
+							TheChoose.Pid = Data[i].PID;
+							TheChoose.style.zIndex = 1;
+							TheChoose.AddEvent("Tap",function(Dom){
+								if(Dom.classList.contains("icon-xuanze2")){
+									Dom.classList.remove("icon-xuanze2");
+									Dom.classList.add("icon-choose");
+									ParentDom.ChooseFiles.Remove(Dom.Pid);
+								}else{
+									Dom.classList.remove("icon-choose");
+									Dom.classList.add("icon-xuanze2");
+									ParentDom.ChooseFiles.push(Dom.Pid);
+								}
+							})
+						}
+						TempDom.appendChild(this);
+						i++;
+						CreateWaterFallItem(i,ParentDom);
+					}
+					ThumbnailDom.src = "https://kk.xiaoxiongmama.com/picture/" + Data[i].ThumbnailPath;
+					ThumbnailDom.AddEvent("Tap",function(Dom){//创建图片轮播
+						var ScrollDom = Dom.parentNode.parentNode.parentNode;
+						OpenPage("Model/BigPicture",{"ImgData":ScrollDom.WaterFallData,"BeginImg":Dom.ImgIndex});
+					})
+				}
+				function GetMinHeight(ParentDom){
+					var MinHeightDom = ParentDom.List[0];
+					for(var i = 1;i < ParentDom.List.length;i++){
+						if(ParentDom.List[i].scrollHeight < MinHeightDom.scrollHeight){
+							MinHeightDom = ParentDom.List[i];  // 最小值
+						}
+					}
+					return MinHeightDom;
+				}
+			}
+			HTMLElement.prototype.SetTranslateX = function(Index){
+				this.style.transform = "translateX(" + (-Index * 100) + "%)";
+				this.style.webkitTransform = "translateX(" + (-Index * 100) + "%)";
+			}
+			HTMLElement.prototype.Slider = function(Data){
+				this.innerHTML = "";//默认清空轮播对象
+				var SliderGroup = CreateDom("div","Slider-Group",this);//创建图片轮播视窗
+				SliderGroup.BeginIndex = 0;//默认为第一张
+				SliderGroup.ImgData = Data;//默认传入的就是图片数组
+				if(Data.hasOwnProperty("BeginImg")){//如果数据指定了开始图片
+					SliderGroup.ImgData = Data.ImgData;//修正图片数组
+					SliderGroup.BeginIndex = Data.BeginImg;//根据图片名称获取在数组中的位置
+				}
+				
+				//if(SliderGroup.ImgData.length > 1){//超过一张则首先创建前一张图片
+					
+				//}
+				AddSliderItem(SliderGroup.ImgData.Previous(SliderGroup.BeginIndex));
+				AddSliderItem(SliderGroup.BeginIndex);//创建当前显示图片
+				AddSliderItem(SliderGroup.ImgData.Next(SliderGroup.BeginIndex));
+				//if(SliderGroup.ImgData.length > 1){//超过一张则创建后一张图片
+					
+				//}
+				delete SliderGroup.BeginIndex;
+				//移动到当前张
+				SliderGroup.SetTranslateX(1);
+				this.AddEvent("swiper",function(Ele,EventType,Mx,My){
+					if(EventType == "Move"){
+						SliderGroup.RemoveTransition();
+						SliderGroup.style.transform = "translateX(" + (Mx - Ele.offsetWidth) + "px)";
+						SliderGroup.style.webkitTransform = "translateX(" + (Mx - Ele.offsetWidth) + "px)";
+					}else{
+						
+						if(EventType == "Left" || EventType == "Right") SliderItemSwiper(EventType);
+						if(EventType == "Top" || EventType == "Down"){
+							if(EventType == "Down"){
+								Ele.ParentPage.AnimationType.Close = "top";
+							}else{
+								Ele.ParentPage.AnimationType.Close = "bottom";
+							}
+							ClosePage(Ele);
+						}
+						if(EventType == "VNo" || EventType == "HNo"){
+							delete SliderGroup.Direction;
+							SliderGroup.AddTransition();
+							SliderGroup.style.transform = "translateX(-100%)";
+							SliderGroup.style.webkitTransform = "translateX(-100%)";
+						};
+					}
+				})
+				function AddSliderItem(Index){				
+					var ImgDom = CreateDom("div","Slider-Item",SliderGroup,'<img src="' + PicturePath + SliderGroup.ImgData[Index].ThumbnailPath + '">');
+					ImgDom.ImgIndex = Index;
+				}
+				function SliderItemSwiper(Direction){
+					SliderGroup.Direction = Direction;
+					SliderGroup.AddTransition();//添加动画
+					SliderGroup.TheIndex = [2,1,0];//默认方向
+					if(Direction == "Left") SliderGroup.TheIndex = [0,1,2];//修正方向					
+					SliderGroup.SetTranslateX(SliderGroup.TheIndex[0]);//移动第一张到当前显示位置
+				}
+				SliderGroup.TransitionEnd(function(Dom){//动画结束					
+					SliderGroup.RemoveTransition();//删除动画
+					if(!SliderGroup.hasOwnProperty("Direction")) return;
+					SetSliderItem(SliderGroup.TheIndex[2]);//更换第一张图片
+					SetSliderItem(SliderGroup.TheIndex[1]);//更换第二张图片
+					SliderGroup.SetTranslateX(1);//归位,移动第二张到当前显示位置
+					SetSliderItem(SliderGroup.TheIndex[0]);//更换第三张图片
+					ShowCollection();
+				});//动画结束后
+				function SetSliderItem(i){
+					var ImgDom = SliderGroup.children[i];
+					if(SliderGroup.Direction == "Left"){
+						ImgDom.ImgIndex = SliderGroup.ImgData.Previous(ImgDom.ImgIndex);
+					}else{
+						ImgDom.ImgIndex = SliderGroup.ImgData.Next(ImgDom.ImgIndex);
+					}
+					ImgDom.firstElementChild.src = PicturePath + SliderGroup.ImgData[ImgDom.ImgIndex].ThumbnailPath;
+				}
+			}
+			function ExecCallBack(CallBack,P1,P2,P3,P4,P5,P6){
+				if(typeof(CallBack) === "string"){
+					typeof(window[CallBack]) === "function" && window[CallBack](P1,P2,P3,P4,P5,P6);
+				}else{
+					typeof(CallBack) === "function" && CallBack(P1,P2,P3,P4,P5,P6);
+				}
+			}
+			//确认消息框
+			//Confirm("Content":"内容", CallBack)
+			//Confirm({"Title":"标题","Content":"内容"}, CallBack)
+			//Confirm({"Title":"标题","Content":"内容","Btns":[{label:'实名认证',index:1},{label:'取消',index:0}]}, CallBack)
+			function Confirm(Data,CallBack){
+				if(CallBack) Data.CallBack = CallBack;
+				OpenPage("System/Confirm",Data);
+			}
+			/*各类消息弹出窗*/
+			//提示消息框Alert("内容",CallBack)Alert({Title: "标题",Content: "内容"},CallBack);
+			function Alert(Data,CallBack){
+				var NewData = {"Title":"","Content":"","Btns":[{label:'确定',index:1}]}
+				if(typeof(Data) == "string" || typeof(Data) == "number") {			
+					NewData.Content = Data;
+				}else{
+					if(Data.hasOwnProperty("Title")) NewData.Title = Data.Title;//无内容主题不创建
+					if(Data.hasOwnProperty("Content")) NewData.Content = Data.Content;//无内容主题不创建
+					if(Data.hasOwnProperty("Btns")) NewData.Btns = Data.Btns;//无内容主题不创建
+				}
+				Confirm(NewData,CallBack);
+			}
+			//顶部消息框MsgData = {Img:Img,Title:Title,Content:Content,Date:Date,Link}Img用户头像，Title用户昵称，Content消息内容，Date发送时间,Link跳出链接
+			function TopMesssage(MsgData){
+				OpenPage("System/TopMessage",MsgData);
+			}
+			function ShowInput(Dom){//绝大部分单行多行输入采用弹出式输入
+				if(!Dom.Opt) return;
+				var ConfirmData = {"Title":Dom.Opt.Title,"Content":"","InputType":Dom.Opt.InputType};
+				ConfirmData.Placeholder = Dom.Opt.Placeholder || Dom.Opt.Title;
+				ConfirmData.Value = Dom.innerHTML;
+				if(ConfirmData.Value == ConfirmData.Placeholder) ConfirmData.Value = "";
+				Confirm(ConfirmData,function(Ele){
+					if(Ele.getAttribute("data-index") == "1"){
+						var TheValue = Ele.getAttribute("data-inputvalue").Trim();
+						Dom.innerHTML = TheValue;
+						SetSubmitData(Dom,Dom.Opt.Key,TheValue);
+					}
+				});
+			}
+			function ShowSheet(Dom,CallBack){//如果需要传递默认值的时候可扩展
+				if(CallBack) Dom.CallBack = CallBack;
+				OpenPage("System/Sheet",Dom);
+			}
+			function ConnectServer(){
+				if(!navigator.onLine) return;//断线不连接
+				window["Wss"] = new WebSocket("wss://kk.xiaoxiongmama.com/Ports.ashx?Uid=" + UserInfo.UID + "&Curl=" + UserInfo.Curl + "&Code=" + UserInfo.code);
+				Wss.onopen = function(){//连接成功
+					OpenIndex();//连接成功则打开首页
+					Wss.inLine = true;
+					console.log("连接成功");
+					for(var i = 0;i < OffLineMsg.length; i++){//处理离线消息
+						SendData(OffLineMsg[i]);
+					}
+					OffLineMsg = [];//清空离线消息
+			//		window.HPTimer = window.setInterval(function(){SendData({Mt:"HP"});},2000);//定时发送心跳包
+				}
+				Wss.onclose = function(){//连接关闭
+					Wss.inLine = false;
+					console.log("连接关闭");
+			//		window.clearInterval(window.HPTimer);
+			//		window.setTimeout(function(){ConnectServer();},1000);//正式运行时打开
+				}
+				Wss.onmessage = function(e){//接收消息
+					console.log(e.data);
+					try{
+						var TheData = JSON.parse(e.data);
+						if(TheData.hasOwnProperty("Dn") && DataDomes.hasOwnProperty(TheData.Dn) && DataDomes[TheData.Dn].hasOwnProperty("Page")) DataDomes[TheData.Dn].Page++;
+						if(TheData.hasOwnProperty("Mt")){
+							if(typeof(window[TheData.Mt]) === "function"){//首先判断是否存在对应接口的处理函数
+								window[TheData.Mt](TheData);//存在则直接调用
+							}else{
+								if(TheData.hasOwnProperty("Dn") && DataDomes.hasOwnProperty(TheData.Dn)){//判断是否有配置Dom名称且对应Dom确实存在
+									DataDomes[TheData.Dn].SetData(TheData.ResultData);//加载数据（数据源名称，0）
+								}else{
+									console.log("未找到处理方法" + e.data);
+								}
+							}
+						}
+					}catch(ex){
+						console.log(ex.message + "\r\n" + e.data);
+					}
+				}	
+			}
+			//WebSocket发送信息
+			function SendData(Data){//发送信息
+				if(!Data.hasOwnProperty("Mt")) return;
+				if(Wss && Wss.inLine){//WebSocket连接并在线才发送消息					
+					if(!Data.hasOwnProperty("Data") || Data.Data == null) Data.Data = {};
+					if(typeof(Data.Data) == "string") Data.Data = JSON.parse(Data.Data);
+					Data.Data.UID = UserInfo.UID;
+					console.log(JSON.stringify(Data));
+					Wss.send(JSON.stringify(Data));
+				}else{
+					OffLineMsg.push(Data);//应该加入离线队列,等到连通后再发送,离线队列使用变量完成即可
+				}
+			}
+			function GEI(Data){//用户信息更新GEI(Data)（服务端发送）
+				UserInfo = Data.ResultData[0];//更新全局变量的用户信息
+				localStorage.setItem("UserInfo",JSON.stringify(UserInfo));//更新本地存储的用户信息
+				if(Os.Wechat && Data.hasOwnProperty("appid")) WechatJSSDK(Data);//如果是微信则初始化微信JSSDK
+				if(Data.hasOwnProperty("URCount")){//未读消息总数
+					sessionStorage.setItem("UnReadCount",Data.URCount);//更新对应的本地存储
+					GURC({"UnReadCount":Data.URCount});
+				}
+			}
+			function WechatJSSDK(Data){
+				if(typeof(wx) == "undefined"){
+					window.setTimeout(function(){WechatJSSDK(Data);},10);
+				}else{
+					wx.config({debug: false,appId:Data.appid,timestamp:Data.timestamp,nonceStr:Data.noncestr,signature:Data.signature,
+						jsApiList: ['onMenuShareTimeline','onMenuShareAppMessage','onMenuShareQQ','onMenuShareWeibo','onMenuShareQZone','hideMenuItems','previewImage']});	 
+					wx.ready(function(){//设置分享内容
+						WxReady = true;
+						WxShare();
+					});
+					wx.error(function(res){});//config信息验证失败会执行error函数，如签名过期导致验证失败，具体错误信息可以打开config的debug模式查看，也可以在返回的res参数中查看，对于SPA可以在这里更新签名。
+				}
+			}
+			function WxShare(){
+				window.Share = {title:"橱窗说",desc:"来这里发现橱窗的美",
+							imgUrl:"https://kk.xiaoxiongmama.com/img/logo.png",
+							link:"https://kk.xiaoxiongmama.com/Home.html?suid=" + UserInfo.UID};
+				if(WxReady){//存在分享内容才进行分享设置
+					wx.onMenuShareTimeline({title:Share.title,link:Share.link,imgUrl:Share.imgUrl,success:function(){},cancel:function(){}});						
+					wx.onMenuShareAppMessage({title:Share.title,desc:Share.desc,link:Share.link,imgUrl:Share.imgUrl,type:'link',dataUrl:'',success:function(){},cancel:function(){}});							
+					wx.onMenuShareQQ({title:Share.title,desc:Share.desc,link:Share.link,imgUrl:Share.imgUrl,success:function(){},cancel:function(){}});
+					wx.onMenuShareWeibo({title:Share.title,desc:Share.desc,link:Share.link,imgUrl:Share.imgUrl,success:function(){},cancel:function(){}});
+					wx.onMenuShareQZone({title:Share.title,desc:Share.desc,link:Share.link,imgUrl:Share.imgUrl,success:function(){},cancel:function(){}});			
+				}else{
+					window.setTimeout(function(){WxShare();},100);//主要针对动态设置分享内容时可能存在不同步
+				}
+			}
+			/*消息处理类函数*/
+			function UUSM(Data){//接收到消息,服务器调用RecivedNews
+				//检查添加消息函数是否合法（添加消息函数是聊天窗口的私有函数，用来判断聊天窗口是否打开）
+				var ChatUser = sessionStorage.getItem('ChatUser');
+				console.log("xx2" + ChatUser);
+				if(typeof(window["AddMessage"]) === "function" && ChatUser == Data.ResultData[0].SendUID){
+					console.log("xx3" + Data.ResultData[0]);
+					if(window["AddMessage"](Data.ResultData[0])) return;//交给添加消息函数处理
+				}
+				TopMesssage({Img:Data.ResultData[0].HeadPortrait,Title:Data.ResultData[0].NickName,Content:Data.ResultData[0].MsgContent,SendTime:Data.ResultData[0].SendTime,senduser:Data.ResultData[0].SendUID,Link:"Chat"});
+				var UnReadCount = sessionStorage.getItem("UnReadCount");
+				UnReadCount++;
+				GURC({"UnReadCount":UnReadCount});//这个是首页的未读消息
+				(window["NewMessage"] && typeof(window["NewMessage"]) === "function") && window["NewMessage"](Data);//消息列表
+			}
+			function GURC(Data){//未读消息
+				sessionStorage.setItem("UnReadCount",Data.UnReadCount);//更新对应的本地存储
+				var UnReadCountDom = document.getElementById("UnReadCount");
+				if(UnReadCountDom){
+					UnReadCountDom.innerHTML = Data.UnReadCount;
+					if(Data.UnReadCount == "0"){
+						UnReadCountDom.classList.add("Hidden");
+					}else{
+						UnReadCountDom.classList.remove("Hidden");
+					}
+				}
+			}
+			function PcDownLoadImg(PPath){
+				window.open("https://kk.xiaoxiongmama.com/Ports.ashx?Uid=" + UserInfo.UID + "&Mt=DLP&PPath=" + PPath);
+			}
+			function OpenIndex(){
+				OpenPage("Model/index");
+			}
+			function Login(){
+				if(Os.Wechat){
+					window.top.location.href = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx14f2a299b9133c1d&redirect_uri=" + encodeURIComponent(location.href) + "&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect";
+				}else{
+					window.top.location.href = "https://open.weixin.qq.com/connect/qrconnect?appid=wxa3cb954c530f3e3e&redirect_uri=" + encodeURI(location.href) + "&response_type=code&scope=snsapi_login&state=3d6be0a4035d839573b04816624a415e&connect_redirect=1#wechat_redirect";
+				}
+			}
+			-->
+		</div>
+		<script>
+			if(parent != window){//属于iframe载入
+				var PUrl = parent.location.href.split("?")[0];//获取父页面地址，可用来判断是否合法加载
+				PUrl = PUrl.replace("Home.html","");
+				var ValidUrl = "http://127.0.0.1:8020/TheKK/";//本地测试时
+//				var ValidUrl = "https://kk.xiaoxiongmama.com/";//正式发布时
+				if(PUrl != ValidUrl){
+					window.location.href="about:blank";
+				}else{//由合法父页面载入
+					window.NewScript = document.createElement("script");
+					window.TempStr = document.getElementById("TheJs").innerHTML;//获取需要记载的JS脚本
+					NewScript.innerHTML = TempStr.replace("<!--","").replace("-->","");//将注释调换掉，不加注释会引起错误
+					delete TempStr;
+					parent.document.body.appendChild(NewScript);//JS脚本载入到父页面，这样才能生效
+					delete NewScript;//只是删除变量，不会造成脚本失效
+				}
+			}else{//不属于iframe载入,被直接打开
+				window.location.href="about:blank";
+			}
+		</script>
+	</body>
+</html>

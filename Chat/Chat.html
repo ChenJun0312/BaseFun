@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>对话</title>
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<link href="../css/Fui.css" rel="stylesheet" />
+	</head>
+	<body>
+		<div class="Content Content-F" style="padding: 15px 5px;">
+			<div class="Scroll" id="ChatScrollDom" data-opt='{"Dn":"ChatList","Mt":"GSUM","Dss":"Parameter"}'>
+				<div class="WBox WBOX-H">
+					<div class="Left" style="padding-right: 5px;">
+						<img class="LXR-HeadPortrait Hidden{{UserType}}" src="{{HeadPortrait}}" />
+					</div>
+					<div class="WItem-1 {{UserType}}">
+						<span class="Font-18-3b">{{MsgContent}}</span>
+					</div>
+					<div class="Right" style="padding-left: 7px;">
+						<img class="LXR-HeadPortrait Hidden{{UserType}}" src="{{HeadPortrait}}" />
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="Nav-Footer WBox WBOX-H">
+			<div class="Left Footer-Item" data-opt='{"Ct":"tap","CFun":"ClosePage"}' style="padding: 0 15px;">
+				<span class="iconfont icon-fanhui"></span>
+			</div>
+			<div class="WItem-1" class="Font-16-0" style="padding-left: 7px;">
+				<input type="text" autofocus="autofocus" id="MsgInput" value="" style="text-indent:15px;width: 100%;height:37px;border: none;border-radius: 5px;"/>
+			</div>
+			<div class="Center" data-opt='{"Ct":"tap","CFun":"SendMsg"}' style="width:88px;height:49px;line-height:49px;">
+				<span style="font-size: 15px;">发送</span>
+			</div>
+		</div>
+	</body>
+	<script type="text/javascript">
+		function ChatChatInit(Dom){
+			sessionStorage.setItem("ChatUser",JSON.parse(Dom.Parameter).RUID);
+			if(Os.Iphone){
+				document.getElementById("MsgInput").addEventListener("focus",function(){
+					window.setTimeout(function(){
+						document.getElementById("MsgInput").scrollIntoView(true);
+						window.scrollTo(0, 500);
+					},168);
+				})	
+			}
+		}
+		function GSUM(Data){//初始化对话列表
+			document.title = "橱窗说(跟" + Data.NickName + "的聊天)";
+			DataDomes["ChatList"].SetData(Data.ResultData);
+			DataDomes["ChatList"].scrollTop = DataDomes["ChatList"].scrollHeight;
+			GURC({UnReadCount:Data.URCount});
+			(window["NewMessage"] && typeof(window["NewMessage"]) === "function") && window["NewMessage"]();//消息列表
+		}
+		function AddMessage(Data){//注意：不是当前聊天对象发过来的消息则由Fui中处理
+			var ChatScrollDom = document.getElementById('ChatScrollDom');
+			if(!ChatScrollDom) return false;
+			CreateMsgRow("Left",Data.HeadPortrait,Data.MsgContent);
+			SendData({"Mt":"URM","MsgID":Data.MsgID});//发送信息已阅
+			return true;
+		}
+		function SendMsg(Dom){
+			var value = document.getElementById("MsgInput").value;
+			document.getElementById("MsgInput").value = "";
+			if(value.Trim() == "") return;
+			var ChatUser = sessionStorage.getItem('ChatUser');
+			sessionStorage.setItem("CurrentSendMsg",value);
+			SendData({"Mt":"UUSM","RUID":ChatUser,"MsgContent":value});
+		}
+		function UUSMR(Data){
+			if(Data.Code == "-1"){
+				CreateMsgRow("Left",CurrentUrl + "img/logo.png","信息违规无法发送");
+			}else{
+				CreateMsgRow("Right",UserInfo.HeadPortrait,sessionStorage.getItem("CurrentSendMsg"));
+				if(Data.Code == "0"){
+					CreateMsgRow("Left",CurrentUrl + "img/logo.png","用户不在线,已经通过微信消息进行了通知，TA会尽快回复您的!");
+				}
+			}
+		}
+		function CreateMsgRow(UserType,HeadPortrait,MsgContent){
+			var ChatScrollDom = document.getElementById('ChatScrollDom');
+			var TempDom = CreateDom("div","WBox WBOX-H",ChatScrollDom);
+			TempDom.innerHTML = '<div class="Left">' + 
+									'<img class="LXR-HeadPortrait Hidden' + UserType + '" src="' + HeadPortrait + '" />' +
+								'</div>' + 
+								'<div class="WItem-1 ' + UserType + '">' + 
+									'<span class="Font-18-3b">' + MsgContent + '</span>' +
+								'</div>' + 
+								'<div class="Right">' + 
+									'<img class="LXR-HeadPortrait Hidden' + UserType + '" src="' + HeadPortrait + '" />' + 
+								'</div>';
+			
+			ChatScrollDom.scrollTop = ChatScrollDom.scrollHeight;
+		}
+		function Close(){
+			if(document.getElementById('ChatScrollDom')){
+				(window["NewMessage"] && typeof(window["NewMessage"]) === "function") && window["NewMessage"]();
+				SendData({"Mt":"GURC"});//获取未读消息总数，更新首页提示
+			}
+		}
+	</script>
+
+</html>

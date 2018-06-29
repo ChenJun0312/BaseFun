@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>搜索结果</title>
+</head>
+<body>
+	<div class="Content" >
+		<div class="Scroll" data-opt='{"Dn":"SPWaterFallBox","Mt":"GTIL","Dss":"Parameter","Dvt":"W"}'></div>
+	</div>
+	<div class="BigPicture-Icon BigPicture-Icon-Back" data-opt='{"Ct":"tap","CFun":"ClosePage"}'>
+		<span class="iconfont icon-fanhui"></span>
+	</div>
+	<div class="BigPicture-Icon BigPicture-Icon-PPath" data-opt='{"Ct":"tap","PageUrl":"Model/Search"}'>
+		<span class="iconfont icon-sousuo-sousuo"></span>
+	</div>
+	<script>
+		function ModelSearchDataInit(Dom){
+			if(Dom.hasOwnProperty("Parameter") && Dom.Parameter.hasOwnProperty("SearchKey")){
+				document.title = "橱窗说(" + Dom.Parameter.SearchKey + "的搜索结果)";
+			}
+		}
+	</script>
+</body>
+</html>
